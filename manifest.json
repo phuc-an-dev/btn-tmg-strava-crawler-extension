@@ -1,0 +1,27 @@
+{
+  "manifest_version": 3,
+  "name": "REVIVE Strava Sync",
+  "version": "0.9.0",
+  "description": "Đồng bộ hoạt động và danh sách thành viên club REVIVE từ phiên Strava hiện tại.",
+  "minimum_chrome_version": "116",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage",
+    "unlimitedStorage",
+    "sidePanel"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "REVIVE Strava Sync"
+  },
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
+  "host_permissions": [
+    "https://www.strava.com/clubs/2368312/*",
+    "https://btn-tmg-strava-tracker.vercel.app/*"
+  ]
+}

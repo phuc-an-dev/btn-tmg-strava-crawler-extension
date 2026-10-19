@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="vi"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>REVIVE Strava Sync</title><link rel="stylesheet" href="sidepanel.css"></head>
+<body><header><span class="brand">REVIVE</span><span class="tag">STRAVA SYNC · 0.8.0</span></header>
+<main><nav class="sync-modes" aria-label="Loại dữ liệu"><button id="modeActivities" class="mode active" type="button">Hoạt động</button><button id="modeMembers" class="mode" type="button">Thành viên</button></nav>
+<section id="activityPanel"><h1>Đồng bộ hội thao</h1><p class="muted">Bài thảo luận club BTN TMG · 2368312</p>
+<div id="connection" class="notice">Đang kiểm tra tab Strava…</div>
+<section class="dates"><label>Từ ngày<input id="startDate" type="date" value="2026-10-04"></label><label>Đến hết ngày<input id="endDate" type="date" value="2026-11-15"></label></section>
+<p class="muted small">Giờ Việt Nam. Gửi cả hoạt động ngoài kỳ để đối chiếu; điểm chỉ được tính sau khi admin duyệt.</p>
+<section class="progress" aria-live="polite"><strong id="status">Chưa lấy dữ liệu</strong><div class="metrics"><div><b id="pages">0</b>Trang</div><div><b id="posts">0</b>Bài đăng</div><div><b id="activities">0</b>Activity</div></div><p id="details" class="muted small"></p></section>
+<p id="error" class="error" role="alert"></p>
+<div class="actions"><button id="start" class="primary">Lấy mới</button><button id="resume">Tiếp tục</button><button id="stop">Dừng</button></div>
+<section class="delivery-status" aria-live="polite"><strong id="deliveryStatus">Chưa gửi dữ liệu</strong><p id="deliveryDetails" class="muted small"></p><button id="retry">Gửi lại</button></section>
+<details class="source-data"><summary>Dữ liệu nguồn</summary><button id="raw">Tải JSON gốc để đối chiếu</button></details>
+<p class="muted small">Đóng sidebar vẫn chạy. Giữ tab Strava mở. Dữ liệu tự gửi về REVIVE và vẫn lưu trên máy; tất cả activities đều chờ admin duyệt.</p>
+</section><section id="memberPanel" hidden><h1>Đồng bộ thành viên</h1><p class="muted">Danh sách thành viên club BTN TMG · 2368312</p><div id="memberConnection" class="notice">Đang kiểm tra tab Strava…</div><section class="progress" aria-live="polite"><strong id="memberStatus">Chưa đồng bộ</strong><div class="metrics"><div><b id="memberPages">0</b>Trang Strava</div><div><b id="memberTotal">0</b>Thành viên</div><div><b id="memberInserted">0</b>Mới</div></div><p id="memberDetails" class="muted small"></p></section><p id="memberError" class="error" role="alert"></p><button id="syncMembers" class="primary member-sync">Đồng bộ thành viên</button><p class="muted small">Chỉ cập nhật tên và vai trò Strava. Nhóm nhỏ, LĐ, tên BTN và liên kết tài khoản được giữ nguyên. Thành viên vắng khỏi danh sách không bị xóa.</p></section>
+<section class="connection-settings"><label for="syncSecret">Mã bí mật REVIVE</label><div class="secret-field"><input id="syncSecret" type="password" autocomplete="off" placeholder="Nhập một lần để kết nối"><button id="saveSecret">Lưu mã</button></div><p id="secretStatus" class="muted small"></p></section>
+</main><script src="core.js"></script><script src="sidepanel.js"></script></body></html>

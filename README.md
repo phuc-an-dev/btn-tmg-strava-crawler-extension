@@ -1,18 +1,49 @@
-# REVIVE Strava Sync
+<p align="center">
+  <img src="docs/revive-icon.png" width="88" alt="Logo REVIVE">
+</p>
 
-Chrome extension hỗ trợ BTC Hội thao Ban Thanh Niên Trương Minh Giảng thu thập bài đăng, hoạt động và danh sách thành viên từ club Strava, sau đó đồng bộ sang web app REVIVE để kiểm tra và duyệt.
+<h1 align="center">REVIVE Strava Sync</h1>
+<p align="center"><strong>Từ bài đăng Strava đến dữ liệu sẵn sàng để BTC đối chiếu.</strong></p>
+<p align="center">
+  Thu thập hoạt động, bài đăng và thành viên trong club — đồng bộ sang REVIVE ngay từ trình duyệt.
+</p>
 
-**[Web app REVIVE](https://btn-tmg-strava-tracker.vercel.app)** · **[Mã nguồn web app](https://github.com/phuc-an-dev/btn-tmg-strava-tracker)**
+<p align="center">
+  <a href="#cài-đặt"><strong>Cài extension →</strong></a>
+  &nbsp;·&nbsp;
+  <a href="https://btn-tmg-strava-tracker.vercel.app">Khám phá web app ↗</a>
+  &nbsp;·&nbsp;
+  <a href="https://github.com/phuc-an-dev/btn-tmg-strava-tracker">Repo web app</a>
+</p>
 
-Phiên bản trong `manifest.json`: **0.9.0** · Chrome Manifest V3 · JavaScript thuần, không cần build.
+<p align="center">v0.9.0 · Chrome 116+ · Manifest V3 · JavaScript thuần · Không cần build</p>
+
+<p align="center">
+  <img src="docs/screenshots/strava-sync.png" width="1000" alt="REVIVE Strava Sync chạy trong side panel bên cạnh club Strava, hiển thị tiến độ thu thập và kết quả đồng bộ">
+</p>
+<p align="center"><sub>Thu thập và đồng bộ ngay bên cạnh club Strava: theo dõi số trang, bài đăng, activity và kết quả gửi về REVIVE.<br>Ảnh chụp giao diện bản 0.8.0; phiên bản mã nguồn hiện tại là 0.9.0. Số liệu minh họa tại thời điểm chụp.</sub></p>
+
+## Một luồng đồng bộ, hai phần việc rõ ràng
+
+```mermaid
+flowchart LR
+    A[Club Strava] --> B[Extension thu thập]
+    B --> C[API REVIVE]
+    C --> D[BTC kiểm tra và duyệt]
+    D --> E[Kết quả trên web]
+```
+
+| Thu thập | Đồng bộ | Tiếp tục khi gián đoạn |
+| --- | --- | --- |
+| Đọc hoạt động, bài đăng, Kudo, ảnh và danh sách thành viên. | Gửi dữ liệu theo lô, giữ nguyên kết quả đã duyệt. | Lưu tiến độ trên máy, tiếp tục lượt quét hoặc gửi lại khi lỗi. |
+
+Extension hỗ trợ BTC Hội thao Ban Thanh Niên Trương Minh Giảng thu thập dữ liệu từ club Strava. Hoạt động mới đồng bộ luôn chờ duyệt; extension không tự cấp điểm thi đấu.
+
+**Tìm nhanh:** [Cách sử dụng](#cách-sử-dụng) · [Quyền truy cập](#quyền-truy-cập-và-bảo-mật) · [Giới hạn](#giới-hạn-cần-biết) · [Tùy biến](#tùy-biến-cho-hệ-thống-riêng) · [Kiểm tra](#phát-triển-và-kiểm-tra)
 
 ## Vai trò trong dự án
 
 REVIVE được tạo ra để giảm việc kiểm tra hàng trăm bài đăng Strava và tổng hợp kết quả Hội thao bằng tay. Extension là cầu nối lấy dữ liệu; web app là nơi BTC duyệt, xử lý khiếu nại và hiển thị kết quả.
-
-```text
-Strava trong trình duyệt → Extension → API REVIVE → BTC duyệt → Kết quả
-```
 
 Thành viên thông thường chỉ cần sử dụng web app. Extension dành cho người vận hành được cấp quyền đồng bộ.
 

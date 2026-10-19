@@ -1,79 +1,161 @@
 # REVIVE Strava Sync
 
-Local Chrome Manifest V3 extension for club 2368312. No build, dependencies, secrets, or server deployment required.
+Chrome extension hỗ trợ BTC Hội thao Ban Thanh Niên Trương Minh Giảng thu thập bài đăng, hoạt động và danh sách thành viên từ club Strava, sau đó đồng bộ sang web app REVIVE để kiểm tra và duyệt.
 
-## Install
+**[Web app REVIVE](https://btn-tmg-strava-tracker.vercel.app)** · **[Mã nguồn web app](https://github.com/phuc-an-dev/btn-tmg-strava-tracker)**
 
-1. Open `chrome://extensions` in Chrome (or `edge://extensions` in Edge).
-2. Enable Developer mode, choose **Load unpacked**, and select this directory.
-3. Sign into Strava and open the club's **Discussion** or **Members** page.
-4. Click the extension icon to open the Chrome sidebar and choose **Hoạt động** or **Thành viên**.
+Phiên bản trong `manifest.json`: **0.9.0** · Chrome Manifest V3 · JavaScript thuần, không cần build.
 
-## Operation
+## Vai trò trong dự án
 
-The extension detects the authenticated athlete from the visible profile link. A content runner coordinates one request at a time; `chrome.scripting.executeScript` with `world: MAIN` performs the same-origin JSON fetch in the page context. No cookie extraction, cookies permission, external endpoints, or credentials are used.
+REVIVE được tạo ra để giảm việc kiểm tra hàng trăm bài đăng Strava và tổng hợp kết quả Hội thao bằng tay. Extension là cầu nối lấy dữ liệu; web app là nơi BTC duyệt, xử lý khiếu nại và hiển thị kết quả.
 
-The initial cursor is the current Unix time plus one second. Subsequent requests use the last entry's `cursorData.updated_at`, as observed in the supplied feed. A non-decreasing cursor, malformed response, HTTP error, or 30-second timeout stops the sync and preserves the last saved checkpoint. Requests are spaced one second apart; there is no automatic retry of 429/auth errors. Resume after correcting the issue.
+```text
+Strava trong trình duyệt → Extension → API REVIVE → BTC duyệt → Kết quả
+```
 
-Closing the sidebar does not stop the content runner. Closing/reloading/navigating the Strava tab stops it; reopen the sidebar on the discussion page and choose **Tiếp tục**. Progress is saved per completed page in `chrome.storage.local`. Resume requires the same Strava athlete. A new run replaces the local dataset after confirmation. Export before replacing it. Local storage is used rather than sync storage; `unlimitedStorage` accommodates raw club post JSON. Uninstalling removes local data.
+Thành viên thông thường chỉ cần sử dụng web app. Extension dành cho người vận hành được cấp quyền đồng bộ.
 
-Stop finishes the current request before saving. A maximum of 5,000 pages prevents an unbounded loop. Fetching does not stop based on post dates because older posts can reference newer activities. Event dates only filter the normalized export; raw export retains all fetched posts.
+Dự án và tài liệu có sự hỗ trợ của AI trong quá trình phát triển; người phát triển chịu trách nhiệm lựa chọn nghiệp vụ, kiểm tra và điều chỉnh kết quả.
 
-## Exports
+## Chức năng
 
-- **Xuất JSON gốc**: source entries, cursor, completion flag, event date configuration.
-- **Xuất activities**: unique activity IDs, activity athlete, source post provenance, actual Steps, declared steps, parsed division/party size, proposed points, warnings and pending review status. In-period Walk activities are in `activities`; all other activities are in `excluded`.
+- Đọc bài thảo luận trong club và nhận diện activity đính kèm, số bước, thông tin đi chung và liên đoàn.
+- Đồng bộ hoạt động sang REVIVE theo lô; hoạt động mới luôn ở trạng thái chờ duyệt.
+- Nhận diện bài cần bổ sung khi chưa có activity đính kèm, đồng bộ Kudo và ảnh được hỗ trợ.
+- Đồng bộ danh sách thành viên Strava, giữ nguyên phân nhóm, liên kết tài khoản và dữ liệu quản lý của web.
+- Lưu tiến độ trên máy, hỗ trợ dừng, tiếp tục, gửi lại khi lỗi và tải JSON gốc để đối chiếu.
+- Sau lượt quét đầy đủ và gửi thành công, đối soát các bài cần bổ sung đã biến mất khỏi nguồn; web lưu lịch sử thay vì xóa bản ghi.
 
-Activity `startLocal` is assumed to be Vietnam time, since the observed feed does not include an activity timezone. Steps are matched by the subtitle (`Steps` / `Số bước`), never by fixed stat position or title. Missing Steps remain null. Multiple activity attachments have ambiguous aggregate stats and require review. Counts greater than one use `round(steps * (1 + people / 10))`; solo receives base steps. These are proposed points only; this extension cannot approve or write competition points.
+Extension không có quyền duyệt hoạt động hoặc tự cấp điểm thi đấu.
 
-The feed is an undocumented web endpoint; Chrome runtime behavior and pagination completeness must be verified after installation. Same-timestamp pagination boundaries cannot be guaranteed from a timestamp-only cursor without observing Strava's contract. Cursor anomalies stop rather than silently skip entries. MAIN-world results are page-controlled and must be validated by any future server importer. No Supabase upload is implemented in this version.
+## Phạm vi hiện tại
 
-## Validation
+Bản này được cấu hình riêng cho:
 
-`npm test` and `npm run check`. The core tests cover pagination guards, integer Steps parsing, syntax variants, deduplication, event boundaries, solo/group scoring and ambiguous stats. The runner harness checks two-page persistence, continuation and errors. These checks are not a claim of live Chrome installation or production Strava sync.
+- Club Strava: `2368312`.
+- Web nhận dữ liệu: `https://btn-tmg-strava-tracker.vercel.app`.
+- Khoảng ngày mặc định trong giao diện: **04/10/2026–15/11/2026**, theo giờ Việt Nam.
 
-Reference: https://developer.chrome.com/docs/extensions/reference/api/scripting
+Clone repo không cấp quyền gửi dữ liệu lên REVIVE. Cần mã bí mật do người quản trị hệ thống cung cấp. Nếu muốn dùng cho club hoặc server khác, hãy xem phần tùy biến bên dưới trước khi chạy.
 
-## Version 0.2 update
+## Cài đặt
 
-Requires Chrome 116+. The toolbar icon opens the native side panel. Reload the extension in chrome://extensions, then reload the Strava tab once to replace the old content runner. The account detector now searches exact athlete profile paths in the account menu, skipping `/training/log` links that previously caused a false not-logged-in error. The sidebar updates the connection on tab changes.
+Yêu cầu Chrome **116 trở lên**, tài khoản Strava có quyền truy cập club và mã đồng bộ nếu cần gửi lên web.
 
-## Version 0.2.1 update
+1. Clone hoặc tải ZIP repo này; giải nén nếu tải ZIP.
+2. Mở `chrome://extensions`.
+3. Bật **Developer mode** → **Load unpacked** → chọn thư mục chứa `manifest.json`.
+4. Đăng nhập Strava và mở trang **Discussion** hoặc **Members** của club.
+5. Nhấn biểu tượng extension để mở side panel.
 
-Explicit host access to `https://www.strava.com/clubs/2368312/*` allows the persistent side panel to identify and inject into the club tab without relying solely on a temporary activeTab grant. The tab resolver checks the last focused window, then permitted discussion tabs, and never chooses an arbitrary unrelated tab. Reload the extension and allow its Strava site access if Chrome/Edge prompts, then reload Strava. The sidebar header shows 0.2.1. Existing collected entries are preserved.
+Edge có thể nạp bản unpacked qua `edge://extensions`; cần kiểm tra khả năng hỗ trợ side panel trên phiên bản đang sử dụng.
 
-## Version 0.2.2 update
+Sau mỗi lần cập nhật mã nguồn, reload extension rồi reload tab Strava để thay content runner cũ.
 
-Added 16px above the sync controls and consistent 10px gaps between buttons. Reload the unpacked extension and reopen its side panel; the header shows 0.2.2. This extension uses plain HTML/CSS/JavaScript directly and requires no build step.
+## Cách sử dụng
 
-## Version 0.3.0: direct REVIVE sync
+### 1. Kết nối với REVIVE
 
-Reload the extension and then the Strava discussion tab. Enter the shared REVIVE secret once in the sidebar and click **Lưu mã**. The secret is saved only in trusted extension storage, never in the Strava page context. This also sends previously collected data. After each new feed page, the worker normalizes activities and uploads batches of at most 50 (including excluded activities, so the website can show them separately).
+Nhập **Mã bí mật REVIVE** trong side panel rồi chọn **Lưu mã**. Mã được lưu trong bộ nhớ cục bộ của extension, không được đưa vào ngữ cảnh trang Strava.
 
-The fixed destination is `https://btn-tmg-strava-tracker.vercel.app/api/extension/activities`. This version requests access to that domain. New activities remain pending; duplicates are skipped and approved data is never overwritten. An upload error pauses automatic sends while crawling can continue; use **Gửi lại** to retry without clearing the local dataset. Incomplete athlete IDs/dates remain local and are reported in the delivery counts. **Dữ liệu nguồn** retains the raw JSON download for troubleshooting. The normalized export and website JSON import are replaced by direct sync.
+Việc lưu mã có thể gửi dữ liệu đã thu thập trước đó. Chỉ dùng mã và máy chủ mà bạn được phép vận hành.
 
-Website configuration: `STRAVA_SYNC_SECRET` is a server-only Vercel environment variable. Supabase stores its SHA256 hash in the private configuration table and allows only the bounded, rate-limited import RPC with a valid secret. It does not need a service-role key. Keep the local secret file outside this distributable extension directory; do not share it or commit it. Rotate by updating both the server env and database hash, deploying, then entering the new secret in the sidebar.
+### 2. Đồng bộ hoạt động
 
-## Version 0.4.0: member roster sync
+1. Mở [Discussion của club](https://www.strava.com/clubs/2368312/discussion).
+2. Chọn **Hoạt động**, kiểm tra khoảng ngày rồi nhấn **Lấy mới**.
+3. Giữ tab Strava mở trong lúc chạy. Đóng side panel không dừng tiến trình; đóng, tải lại hoặc chuyển trang trong tab Strava sẽ làm tiến trình dừng.
+4. Theo dõi riêng tiến độ thu thập và tiến độ gửi dữ liệu.
+5. Nếu bị gián đoạn, mở lại đúng trang và chọn **Tiếp tục**. Nếu lỗi gửi, xử lý nguyên nhân rồi chọn **Gửi lại**.
 
-Open `https://www.strava.com/clubs/2368312/members`, select **Thành viên**, and click **Đồng bộ thành viên**. The extension reads the linked pagination pages from the authenticated Strava page, deduplicates by athlete ID, and sends the roster to `/api/extension/members` with the same saved secret. It refuses to upload if Strava reports a total that does not match the collected rows. Keep the tab open while it reads pages.
+Tiếp tục yêu cầu cùng tài khoản Strava. Một lượt **Lấy mới** thay thế dữ liệu thu thập cục bộ sau khi xác nhận; nếu cần lưu bản cũ, hãy tải JSON gốc trước.
 
-The import requires a complete roster and writes only the Strava name, Strava club role, source URL, and sync time. Existing BTN names, division/group assignments, linked accounts, and active flags are preserved. New roster rows start with database defaults and are not linked to login accounts. Missing members are never deleted or deactivated. Each sync writes one Audit entry with new, updated, and unchanged counts. Reload the unpacked extension and Strava Members page after updating to version 0.4.0.
+Ngày trong giao diện phục vụ phân loại hoạt động; quá trình đọc vẫn đi qua nguồn bài đăng, không dừng chỉ vì gặp bài cũ. Hoạt động ngoài kỳ cũng có thể được gửi để web đối chiếu, nhưng không vì thế được tính điểm.
 
-## Version 0.5.0: incomplete reports
-Reports with a group code or Strava link but no embedded Activity are sent separately to `/api/extension/posts`. They never become scoreable activities and never inherit steps from their title. Post IDs are distinct from Activity IDs. After a post is edited and a linked activity is successfully imported, re-crawling reconciles its report. Visible post headers supplement missing feed author metadata; records without a reliable author ID stay local and are counted in delivery details. Reload the unpacked extension and Strava tab, then choose **Lấy mới** to collect older posts with author metadata.
+### 3. Đồng bộ thành viên
 
-## Version 0.6.0: discussion kudos
-Reads `post.kudos_count` and `post.originator_name` (verified against an exported feed and the visible discussion count). Counts belong to the post author, never an attached activity's athlete. Zero is retained, absent/invalid counts remain unknown. Every fetched entry records its observation time; saved data uses the checkpoint time as fallback. Re-crawling sends current post snapshots, including acknowledged posts whose count changed. The server deduplicates Post IDs, ignores older observations and never modifies review status or competition points. Reload the extension and Strava tab, then choose **Lấy mới**.
+1. Mở [Members của club](https://www.strava.com/clubs/2368312/members).
+2. Chọn **Thành viên** → **Đồng bộ thành viên**.
+3. Giữ tab mở đến khi đọc và gửi xong.
 
-### Discussion photos (0.7.0)
+Extension đọc các trang danh sách và loại trùng theo athlete ID. Nếu tổng Strava công bố không khớp số đã lấy, extension từ chối gửi danh sách đó.
 
-Post snapshots include up to 10 direct `post.photos` images (`media_type=1`), with a 100px thumbnail, 1800px image URL, ID and caption. Only HTTPS URLs on the observed Strava image CDN are accepted. Missing `photos` preserves existing media; a known empty array clears it. Videos and images inside attached activities are not imported. Media is included in delivery fingerprints and post batches are bounded by both row count and payload size.
+Web chỉ cập nhật dữ liệu nguồn Strava; giữ nguyên tên BTN, nhóm nhỏ, liên đoàn, tài khoản liên kết và trạng thái hoạt động. Thành viên vắng khỏi nguồn không tự động bị xóa.
 
-### Activity photos (0.8.0)
+### 4. Đối chiếu dữ liệu
 
-Activity rows now include attachment `media` photos and their observation timestamp. `Photo` media is normalized separately from post photos; videos are excluded. Media fingerprints allow acknowledged activities to be sent again when photos change. The server updates only dedicated media columns for duplicate activity IDs, preserving reviewed steps, status, points, attribution and revision. Older media snapshots are ignored; an empty current array removes photos.
+Mở **Dữ liệu nguồn** → **Tải JSON gốc để đối chiếu**. Tệp này có thể chứa thông tin thành viên và bài đăng; chỉ dùng trong phạm vi được phép, không đính kèm công khai vào issue.
 
-## 0.9.0 — reconcile deleted posts
+Dữ liệu tiến độ lưu bằng `chrome.storage.local`, không đồng bộ qua tài khoản Chrome. Gỡ extension sẽ xóa dữ liệu cục bộ.
 
-After a complete crawl and all uploads succeed, the extension sends every observed raw Post ID (including posts that cannot be normalized) to `/api/extension/posts/complete`. Missing unresolved reports are hidden from **Cần bổ sung**, with their records and scan history retained. Reappearing reports are restored on a later complete crawl. Partial/failed crawls never hide reports; failed finalization can be retried with **Gửi lại**. Older saved runs cannot override a newer completed scan. Approved activities, scores, and Top Kudo are unchanged. Reload the extension and Strava tab, then choose **Lấy mới** (or **Gửi lại** for an already complete saved crawl).
+## Nguyên tắc xử lý dữ liệu
+
+- Số bước được nhận diện qua nhãn **Steps / Số bước**, không suy ra từ vị trí cố định hoặc tiêu đề bài đăng.
+- Số bước thiếu hoặc activity có thống kê không rõ ràng cần được kiểm tra; không tự coi là dữ liệu đã duyệt.
+- Điểm đề xuất: đi một mình bằng số bước; từ 2 người dùng `round(số bước × (1 + số người / 10))`, bao gồm người tạo hoạt động. Kết quả chính thức do web kiểm tra và BTC duyệt.
+- Đồng bộ lại activity trùng có thể cập nhật ảnh, không ghi đè số bước đã duyệt, trạng thái, điểm hoặc phân bổ kết quả.
+- Kudo thuộc tác giả bài đăng, được theo dõi riêng và không làm thay đổi điểm đi bộ.
+- Lượt quét thiếu hoặc thất bại không được dùng để ẩn bài cần bổ sung. Đối soát nguồn chỉ hoàn tất khi lượt quét đầy đủ và các phần gửi liên quan thành công.
+
+## Quyền truy cập và bảo mật
+
+| Quyền | Mục đích |
+| --- | --- |
+| `activeTab`, `scripting` | Thực thi phần đọc dữ liệu trong tab Strava được phép |
+| `storage`, `unlimitedStorage` | Lưu tiến độ, dữ liệu nguồn và cấu hình cục bộ |
+| `sidePanel` | Hiển thị bảng điều khiển bên cạnh trình duyệt |
+| Host Strava club | Truy cập trang club đã cấu hình |
+| Host REVIVE | Gửi dữ liệu sang web app |
+
+Extension dùng phiên đăng nhập Strava hiện tại, không yêu cầu nhập mật khẩu Strava và không trích xuất cookie qua Chrome Cookies API. Yêu cầu đọc nguồn chạy trong ngữ cảnh trang Strava; phần gửi REVIVE chạy trong extension worker và dùng mã đồng bộ riêng.
+
+Không commit mã đồng bộ, dữ liệu xuất hoặc thông tin đăng nhập. Khi cần đổi mã, phải cập nhật cấu hình server, hash trong database và mã đã lưu ở extension cho đồng bộ.
+
+## Giới hạn cần biết
+
+Nguồn đọc là endpoint web không có hợp đồng API công khai mà dự án dựa vào. Thay đổi giao diện, cấu trúc phản hồi hoặc giới hạn truy cập của Strava có thể làm extension ngừng hoạt động.
+
+- Mỗi lần chỉ đọc một request, cách nhau khoảng một giây; lỗi HTTP, timeout hoặc cursor bất thường sẽ dừng và giữ checkpoint.
+- Không tự lặp lại liên tục khi gặp lỗi đăng nhập hoặc giới hạn 429.
+- Phân trang dựa trên timestamp không bảo đảm tuyệt đối đầy đủ ở ranh giới nhiều bài cùng timestamp. Cần đối chiếu nguồn khi kết quả có nghi vấn.
+- Giá trị ngày giờ activity không kèm timezone được xử lý theo giả định giờ Việt Nam.
+- Ảnh được gửi dưới dạng URL nguồn; không có bảo đảm URL tồn tại lâu dài. Video không được nhập.
+
+Chỉ sử dụng với dữ liệu bạn được phép truy cập và tuân thủ điều khoản áp dụng của Strava. Đây là công cụ cộng đồng, không phải extension chính thức của Strava.
+
+## Tùy biến cho hệ thống riêng
+
+Bản hiện tại chưa có phần cài đặt club/server trong giao diện. Khi fork, cần rà soát đồng bộ:
+
+1. Club ID, URL, bộ kiểm tra tab và request nguồn trong `core.js`, `background.js`, `delivery.js` và giao diện side panel.
+2. Endpoint nhận dữ liệu trong `background.js`, `delivery.js` và `host_permissions` trong `manifest.json`.
+3. Khoảng ngày mặc định trong `sidepanel.html`, `sidepanel.js` và quy định thời gian ở web/database.
+4. Cấu hình API phía web, mã đồng bộ server và SHA-256 của cùng mã trong database. Xem [README web app](https://github.com/phuc-an-dev/btn-tmg-strava-tracker#ch%E1%BA%A1y-%E1%BB%9F-m%C3%A1y-c%C3%A1-nh%C3%A2n).
+
+Không dùng endpoint REVIVE đang vận hành để thử dữ liệu cho bản fork.
+
+## Phát triển và kiểm tra
+
+Không cần npm install hoặc build để nạp extension. Cần Node.js có hỗ trợ `node --test` để chạy kiểm tra; nên dùng Node LTS hiện hành.
+
+```bash
+npm test
+npm run check
+```
+
+Các bài kiểm tra bao gồm phân tích số bước, loại trùng, khoảng ngày, tính điểm đề xuất, phân trang, lưu/tiếp tục tiến độ và gửi dữ liệu. Chúng không thay thế việc kiểm tra trong Chrome và đối chiếu với nguồn Strava thực tế.
+
+| Tệp | Vai trò |
+| --- | --- |
+| `manifest.json` | Phiên bản, quyền và cấu hình extension |
+| `background.js` | Service worker, đọc dữ liệu và đồng bộ thành viên |
+| `content.js` | Điều phối tiến trình trong tab |
+| `core.js` | Chuẩn hóa dữ liệu và tiện ích |
+| `delivery.js` | Gửi hoạt động, bài đăng và hoàn tất lượt quét |
+| `sidepanel.*` | Giao diện điều khiển |
+| `tests/` | Kiểm tra bằng Node.js |
+
+## Góp ý
+
+Bạn có thể [mở issue](https://github.com/phuc-an-dev/btn-tmg-strava-crawler-extension/issues) kèm phiên bản trình duyệt, phiên bản trong `manifest.json`, thao tác tái hiện và lỗi đã che thông tin nhạy cảm. Không gửi mã bí mật hoặc toàn bộ JSON chứa dữ liệu thành viên.
